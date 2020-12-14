@@ -45,13 +45,16 @@ context_t context_for_customers[cashiersMaxAmount];
  Seed for random number generator
  */
 unsigned int seed = 101;
+pthread_mutex_t randomMutex;
 
 /**
  Customer thread method
  */
 void *Customer(void *param) {
     int pNum = *((int*)param);
+    pthread_mutex_lock(&randomMutex);
     int deskNumber = rand() % cashiersAmount;
+    pthread_mutex_unlock(&randomMutex);
     context_t *context = &context_for_customers[deskNumber];
     printf("Клиент %d встал в очередь на кассу %d\n", pNum, deskNumber + 1);
     pthread_mutex_lock(&context->cameToCashierDeskMutex);
@@ -102,7 +105,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (cashiersAmount > customersAmount) {
-        printf("Магазин иногда работает неправильно, если в нем больше кассиров чем касс\n");
+        printf("Магазин иногда работает неправильно, если в нем больше кассиров чем покупателей\n");
     }
     
     printf("Магазин открыт, заходят %d покупателей\n", customersAmount);
@@ -112,6 +115,7 @@ int main(int argc, char *argv[]) {
     
     // Prepare all mutexes and semaphores
     pthread_mutex_init(&counterMutex, NULL);
+    pthread_mutex_init(&randomMutex, NULL);
     for (int i = 0; i < cashiersAmount; i++) {
         context_t *context = &context_for_customers[i];
         pthread_mutex_init(&context->cameToCashierDeskMutex, NULL);
